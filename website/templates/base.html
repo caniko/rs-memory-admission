@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="{{ lang | default(value=config.default_language) }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+  <meta name="description" content="{{ config.description }}">
+  <link rel="stylesheet" href="{{ get_url(path='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="{{ config.base_url }}">{{ config.title }}</a>
+      <div class="nav-links">
+        <a href="{{ config.base_url }}/docs/">Documentation</a>
+        <a href="https://codeberg.org/caniko/rs-memory-admission">Source</a>
+      </div>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock content %}
+  </main>
+  <footer class="footer">
+    <span>MIT OR Apache-2.0</span>
+    <a href="https://codeberg.org/caniko/rs-memory-admission">Codeberg</a>
+  </footer>
+</body>
+</html>

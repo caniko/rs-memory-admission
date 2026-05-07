@@ -1,0 +1,29 @@
+[package]
+name = "memory-admission"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Memory-aware admission gate for parallel work pipelines (sync + async APIs)"
+repository = "https://codeberg.org/caniko/rs-memory-admission"
+readme = "README.md"
+
+[features]
+default = ["sync", "async", "sysinfo"]
+# Synchronous AdmissionGate driven by std::sync::Condvar; intended for Rayon and
+# other thread-pool-based pipelines.
+sync = []
+# Asynchronous AdmissionGate driven by tokio::sync::Notify; intended for Tokio
+# stream pipelines and futures::stream::buffer_unordered consumers.
+async = ["dep:tokio"]
+# Cross-platform memory probe via the `sysinfo` crate. When disabled, only the
+# Linux /proc/meminfo provider is available.
+sysinfo = ["dep:sysinfo"]
+
+[dependencies]
+tracing = "0.1"
+tokio = { version = "1", features = ["sync", "time", "macros"], optional = true }
+sysinfo = { version = "0.32", default-features = false, features = ["system"], optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["sync", "time", "rt", "rt-multi-thread", "macros"] }
+proptest = "1"
