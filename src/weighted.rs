@@ -36,7 +36,9 @@ use tokio::sync::Notify;
 use std::sync::Condvar;
 
 use crate::config::{Config, ConfigError};
-use crate::provider::{MemoryStats, ProviderError, SharedMemoryProvider};
+#[cfg(any(feature = "sync", feature = "async"))]
+use crate::provider::ProviderError;
+use crate::provider::{MemoryStats, SharedMemoryProvider};
 
 /// Configuration for a weighted admission gate.
 #[derive(Debug, Clone)]
@@ -144,6 +146,7 @@ impl std::fmt::Display for WeightedConfigError {
 
 impl std::error::Error for WeightedConfigError {}
 
+#[cfg_attr(not(any(feature = "sync", feature = "async")), allow(dead_code))]
 #[derive(Debug)]
 struct GateState {
     committed_bytes: u64,
@@ -159,6 +162,7 @@ struct GateState {
     throttled: bool,
 }
 
+#[cfg_attr(not(any(feature = "sync", feature = "async")), allow(dead_code))]
 struct Inner {
     state: Mutex<GateState>,
     #[cfg(feature = "sync")]
@@ -170,6 +174,7 @@ struct Inner {
 }
 
 /// Decision returned by the internal admit-attempt step.
+#[cfg(any(feature = "sync", feature = "async"))]
 enum AttemptOutcome {
     /// Permit granted; caller increments accounting and returns.
     Admitted,
@@ -180,6 +185,7 @@ enum AttemptOutcome {
 }
 
 impl Inner {
+    #[cfg(any(feature = "sync", feature = "async"))]
     fn try_admit(&self, weight: u64) -> AttemptOutcome {
         let mut state = self.state.lock().expect("weighted gate poisoned");
 
@@ -293,6 +299,7 @@ impl Inner {
         self.notify.notify_waiters();
     }
 
+    #[cfg(any(feature = "sync", feature = "async"))]
     fn fresh_stats(&self, state: &mut GateState) -> Result<MemoryStats, ProviderError> {
         if let (Some(cached), Some(when)) = (state.cached_stats, state.cached_at)
             && when.elapsed() < self.config.stats_max_age
@@ -317,6 +324,7 @@ impl Inner {
     }
 }
 
+#[cfg(any(feature = "sync", feature = "async"))]
 fn log_throttle(state: &mut GateState, kind: &'static str, current: f64, threshold: f64) {
     if state.throttled {
         return;
@@ -533,6 +541,7 @@ pub struct WeightedPermit {
 }
 
 impl WeightedPermit {
+    #[cfg(any(feature = "sync", feature = "async"))]
     fn new(inner: Arc<Inner>, weight: u64, oversized: bool) -> Self {
         Self {
             inner: Some(inner),
@@ -574,6 +583,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    #[cfg(any(feature = "sync", feature = "async"))]
     use crate::providers::FixedProvider;
 
     #[cfg(feature = "async")]

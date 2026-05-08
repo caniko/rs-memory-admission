@@ -1,11 +1,22 @@
 [package]
 name = "memory-admission"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 description = "Memory-aware admission gate for parallel work pipelines (sync + async APIs)"
 repository = "https://codeberg.org/caniko/rs-memory-admission"
+homepage = "https://caniko.codeberg.page/rs-memory-admission/"
+documentation = "https://docs.rs/memory-admission"
 readme = "README.md"
+keywords = ["memory", "admission", "throttling", "async", "pipelines"]
+categories = ["asynchronous", "concurrency", "memory-management"]
+include = [
+  "/Cargo.lock",
+  "/Cargo.toml",
+  "/README.md",
+  "/src/**",
+]
 
 [features]
 default = ["sync", "async", "sysinfo"]
