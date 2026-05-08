@@ -24,7 +24,6 @@
         overlays = [(import rust-overlay)];
       };
       lib = pkgs.lib;
-
       toolchain = rs-harbor.lib.mkToolchain {inherit pkgs;};
       inherit (toolchain) craneLib;
 
@@ -41,25 +40,6 @@
         // {
           inherit cargoArtifacts;
         });
-
-      website = pkgs.stdenv.mkDerivation {
-        pname = "memory-admission-website";
-        version = "0.1.0";
-        src = lib.fileset.toSource {
-          root = ./.;
-          fileset = lib.fileset.maybeMissing ./website;
-        };
-        nativeBuildInputs = [pkgs.zola];
-        phases = ["buildPhase" "installPhase"];
-        buildPhase = ''
-          cp -r --no-preserve=mode $src/website site
-          cd site
-          zola build
-        '';
-        installPhase = ''
-          cp -r public $out
-        '';
-      };
 
       docs = pkgs.stdenv.mkDerivation {
         pname = "memory-admission-docs";
@@ -79,16 +59,11 @@
         '';
       };
 
-      site = pkgs.runCommand "memory-admission-site" {} ''
-        mkdir -p $out
-        cp -r ${website}/* $out/
-        mkdir -p $out/docs
-        cp -r ${docs}/* $out/docs/
-      '';
+      site = docs;
     in {
       packages = {
         default = package;
-        inherit website docs site;
+        inherit docs site;
       };
 
       checks = {
@@ -111,10 +86,8 @@
           cargo-nextest
           mdbook
           rust-analyzer
-          zola
         ];
         shellHook = ''
-          echo "Website: cd website && zola serve"
           echo "Documentation: cd docs && mdbook serve"
         '';
       };
