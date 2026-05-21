@@ -14,9 +14,17 @@ categories = ["asynchronous", "concurrency", "memory-management"]
 include = [
   "/Cargo.lock",
   "/Cargo.toml",
+  "/LICENSE",
+  "/LICENSE-APACHE",
+  "/LICENSE-MIT",
   "/README.md",
+  "/docs/src/**",
   "/src/**",
 ]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["sync", "async", "sysinfo"]
@@ -32,9 +40,21 @@ sysinfo = ["dep:sysinfo"]
 
 [dependencies]
 tracing = "0.1"
-tokio = { version = "1", features = ["sync", "time", "macros"], optional = true }
-sysinfo = { version = "0.32", default-features = false, features = ["system"], optional = true }
+tokio = { version = "1", features = [
+  "sync",
+  "time",
+  "macros",
+], optional = true }
+sysinfo = { version = "0.32", default-features = false, features = [
+  "system",
+], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["sync", "time", "rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1", features = [
+  "sync",
+  "time",
+  "rt",
+  "rt-multi-thread",
+  "macros",
+] }
 proptest = "1"

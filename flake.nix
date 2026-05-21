@@ -8,6 +8,14 @@
     rust-overlay.follows = "rs-harbor/rust-overlay";
     crane.follows = "rs-harbor/crane";
     flake-utils.follows = "rs-harbor/flake-utils";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -16,6 +24,8 @@
     rs-harbor,
     flake-utils,
     rust-overlay,
+    treefmt-nix,
+    git-hooks,
     ...
   }:
     flake-utils.lib.eachDefaultSystem (system: let
@@ -60,14 +70,27 @@
       };
 
       site = docs;
+
+      treefmtEval = treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix);
+      pre-commit-check = git-hooks.lib.${system}.run {
+        src = ./.;
+        hooks = import ./nix/pre-commit.nix {
+          inherit pkgs;
+          treefmtWrapper = treefmtEval.config.build.wrapper;
+          rustToolchain = toolchain.rustToolchain;
+        };
+      };
     in {
       packages = {
         default = package;
         inherit docs site;
       };
 
+      formatter = treefmtEval.config.build.wrapper;
+
       checks = {
         default = package;
+        formatting = treefmtEval.config.build.check self;
 
         clippy = craneLib.cargoClippy (commonArgs
           // {
@@ -82,12 +105,19 @@
 
       devShells.default = craneLib.devShell {
         checks = self.checks.${system};
-        packages = with pkgs; [
-          cargo-nextest
-          mdbook
-          rust-analyzer
-        ];
+        packages = with pkgs;
+          [
+            alejandra
+            cargo-nextest
+            mdbook
+            pre-commit
+            prettier
+            rust-analyzer
+            taplo
+          ]
+          ++ pre-commit-check.enabledPackages;
         shellHook = ''
+          ${pre-commit-check.shellHook}
           echo "Documentation: cd docs && mdbook serve"
         '';
       };
