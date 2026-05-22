@@ -301,10 +301,10 @@ impl Inner {
 
     #[cfg(any(feature = "sync", feature = "async"))]
     fn fresh_stats(&self, state: &mut GateState) -> Result<MemoryStats, ProviderError> {
-        if let (Some(cached), Some(when)) = (state.cached_stats, state.cached_at)
-            && when.elapsed() < self.config.stats_max_age
-        {
-            return Ok(cached);
+        if let (Some(cached), Some(when)) = (state.cached_stats, state.cached_at) {
+            if when.elapsed() < self.config.stats_max_age {
+                return Ok(cached);
+            }
         }
         match self.provider.stats() {
             Ok(stats) => {

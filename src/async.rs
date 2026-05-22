@@ -78,14 +78,16 @@ impl AdmissionGate {
         let mut scheduler_active = config.memory_scheduler_enabled;
         let mut provider_failure_logged = false;
 
-        if scheduler_active && let Err(e) = provider.used_fraction() {
-            tracing::warn!(
-                error = %e,
-                "memory provider failed at init; falling back to thread-cap-only scheduling"
-            );
-            scheduler_active = false;
-            memory_source = MemorySource::ThreadCapOnly;
-            provider_failure_logged = true;
+        if scheduler_active {
+            if let Err(e) = provider.used_fraction() {
+                tracing::warn!(
+                    error = %e,
+                    "memory provider failed at init; falling back to thread-cap-only scheduling"
+                );
+                scheduler_active = false;
+                memory_source = MemorySource::ThreadCapOnly;
+                provider_failure_logged = true;
+            }
         }
 
         Self {
