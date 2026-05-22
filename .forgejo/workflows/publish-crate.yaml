@@ -1,3 +1,4 @@
+# Before creating and pushing a release tag, run `simit changelog release <version>` locally.
 name: Publish Crate
 
 on:
@@ -14,9 +15,11 @@ jobs:
     runs-on: atlas
     container: rust:1.85-bookworm
     steps:
-      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
 
-      - uses: https://github.com/Swatinem/rust-cache@v2
+      - name: Cache Rust builds
+        uses: https://github.com/Swatinem/rust-cache@v2
         with:
           shared-key: ${{ github.workflow }}
           cache-on-failure: true
@@ -45,23 +48,18 @@ jobs:
             tag="${ref#refs/tags/}"
           fi
 
-          if ! printf '%s\n' "$tag" \
-            | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Tag must be an exact semver version, got '$tag'" >&2
+          if ! printf '%s\n' "$tag" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag must be an exact semver version like 0.1.1, got '$tag'" >&2
             exit 1
           fi
 
-          version="$(
-            cargo metadata --no-deps --format-version 1 \
-              | grep -m1 -o '"version":"[^"]*"' \
-              | cut -d '"' -f4
-          )"
+          version="$(cargo metadata --no-deps --format-version 1 | grep -m1 -o '"version":"[^"]*"' | cut -d '"' -f4)"
           if [ -z "$version" ]; then
             echo "Could not read package version from cargo metadata" >&2
             exit 1
           fi
           if [ "$tag" != "$version" ]; then
-            echo "Tag $tag does not match package version $version" >&2
+            echo "Tag $tag does not match Cargo.toml package version $version" >&2
             exit 1
           fi
 
@@ -98,11 +96,9 @@ jobs:
         env:
           CRATES_IO_API_TOKEN: ${{ secrets.CRATES_IO_API_TOKEN }}
         run: |
-          if [ -z "${CRATES_IO_API_TOKEN:-}" ] \
-            && [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
+          if [ -z "${CRATES_IO_API_TOKEN:-}" ] && [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
             echo "CRATES_IO_API_TOKEN is required to publish to crates.io" >&2
             exit 1
           fi
-          CARGO_REGISTRY_TOKEN="${CARGO_REGISTRY_TOKEN:-$CRATES_IO_API_TOKEN}"
-          export CARGO_REGISTRY_TOKEN
+          export CARGO_REGISTRY_TOKEN="${CARGO_REGISTRY_TOKEN:-$CRATES_IO_API_TOKEN}"
           cargo publish

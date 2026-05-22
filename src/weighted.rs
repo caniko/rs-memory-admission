@@ -1,6 +1,6 @@
 //! Weighted (byte-budgeted) admission gates.
 //!
-//! Plain [`crate::sync::AdmissionGate`] / [`crate::r#async::AdmissionGate`]
+//! Plain [`crate::sync::AdmissionGate`] / `async::AdmissionGate`
 //! treat every task as equal: as long as host RAM usage is below the threshold
 //! they admit unboundedly many. That works when tasks have similar memory
 //! cost. It breaks when a single pipeline mixes 5 KB metadata writes with
@@ -22,7 +22,7 @@
 //! growing allocations show up as falling `MemAvailable` while their parent
 //! still holds the permit).
 //!
-//! This module mirrors the API of [`crate::sync`] / [`crate::r#async`]: sync
+//! This module mirrors the API of [`crate::sync`] / `async`: sync
 //! and async admission gates plus a [`WeightedPermit`] that reserves its byte
 //! count for the lifetime of the permit.
 

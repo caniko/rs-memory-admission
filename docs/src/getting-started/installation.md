@@ -12,5 +12,5 @@ To choose a smaller API surface, disable default features and opt in:
 
 ```toml
 [dependencies]
-memory-admission = { version = "0.1.0", default-features = false, features = ["async"] }
+memory-admission = { version = "0.1.7", default-features = false, features = ["async"] }
 ```

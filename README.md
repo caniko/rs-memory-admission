@@ -17,7 +17,7 @@ worker count alone is not a useful safety limit.
 
 ```toml
 [dependencies]
-memory-admission = "0.1.6"
+memory-admission = "0.1.7"
 ```
 
 Disable default features if you only need one gate style or want to avoid the
@@ -25,7 +25,7 @@ cross-platform `sysinfo` provider:
 
 ```toml
 [dependencies]
-memory-admission = { version = "0.1.6", default-features = false, features = ["async"] }
+memory-admission = { version = "0.1.7", default-features = false, features = ["async"] }
 ```
 
 ## Providers

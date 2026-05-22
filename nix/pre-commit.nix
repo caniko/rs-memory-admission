@@ -26,6 +26,14 @@
     pass_filenames = false;
   };
 
+  cargo-audit = {
+    enable = true;
+    name = "cargo audit";
+    entry = "cargo audit";
+    extraPackages = pkgs.lib.optional (rustToolchain != null) rustToolchain ++ [pkgs.cargo-audit];
+    pass_filenames = false;
+  };
+
   nix-flake-check = {
     enable = true;
     name = "nix flake check";
