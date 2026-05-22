@@ -29,10 +29,10 @@ jobs:
 
       - name: Install cargo tools
         run: |
-          cargo binstall -y \
-            cargo-audit \
-            cargo-deny \
-            cargo-nextest
+          cargo binstall -y --locked \
+            cargo-audit@0.22.1 \
+            cargo-deny@0.18.3 \
+            cargo-nextest@0.9.100
 
       - name: Validate tag
         run: |
