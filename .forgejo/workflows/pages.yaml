@@ -11,7 +11,7 @@ concurrency:
 jobs:
   publish:
     runs-on: atlas
-    container: nixos/nix:latest
+    container: nixpkgs/nix-flakes:latest
     env:
       NIX_CONFIG: |
         experimental-features = nix-command flakes
