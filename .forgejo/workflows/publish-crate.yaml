@@ -13,7 +13,7 @@ concurrency:
 jobs:
   publish:
     runs-on: atlas
-    container: rust:1.85-bookworm
+    container: rust:1.91-bookworm
     steps:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
@@ -29,10 +29,10 @@ jobs:
 
       - name: Install cargo tools
         run: |
-          cargo binstall -y --locked \
-            cargo-audit@0.22.1 \
-            cargo-deny@0.18.3 \
-            cargo-nextest@0.9.100
+          cargo binstall -y \
+            cargo-audit \
+            cargo-deny \
+            cargo-nextest
 
       - name: Validate tag
         run: |
