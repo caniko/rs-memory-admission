@@ -12,7 +12,7 @@ concurrency:
 jobs:
   flake-check:
     runs-on: atlas
-    container: nixpkgs/nix-flakes:latest
+    container: rust:1.85-bookworm
     env:
       NIX_CONFIG: |
         experimental-features = nix-command flakes
@@ -22,8 +22,18 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
 
+      - name: Install Nix
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl xz-utils
+          mkdir -m 0755 /nix
+          mkdir -p /etc/nix
+          printf 'build-users-group =\nexperimental-features = nix-command flakes\n' > /etc/nix/nix.conf
+          curl -L https://nixos.org/nix/install -o /tmp/install-nix.sh
+          sh /tmp/install-nix.sh --no-daemon
+
       - name: Nix flake check
-        run: nix flake check --keep-going --print-build-logs
+        run: /root/.nix-profile/bin/nix flake check --keep-going --print-build-logs
 
   release-checks:
     runs-on: atlas
