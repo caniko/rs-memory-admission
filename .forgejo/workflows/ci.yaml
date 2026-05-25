@@ -28,7 +28,7 @@ jobs:
           key: cargo-bin-${{ runner.os }}-${{ hashFiles('.forgejo/workflows/ci.yaml', '.github/workflows/ci.yaml') }}
 
       - name: Install nextest
-        run: command -v cargo-nextest >/dev/null 2>&1 || cargo install cargo-nextest --locked
+        run: command -v cargo-nextest >/dev/null 2>&1 || cargo install cargo-nextest --locked --version 0.9.100
 
       - name: Test all features
         run: cargo nextest run --all-features
