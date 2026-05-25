@@ -81,14 +81,11 @@ jobs:
           git fetch --force --tags origin "refs/tags/${tag}:refs/tags/${tag}"
           git verify-tag "$tag"
 
-      - name: Install nextest
-        run: command -v cargo-nextest >/dev/null 2>&1 || cargo install cargo-nextest --locked --version 0.9.100
-
       - name: Test all features
-        run: cargo nextest run --all-features
+        run: cargo test --all-features
 
       - name: Test no default features
-        run: cargo nextest run --no-default-features
+        run: cargo test --no-default-features
 
       - name: Install cargo-audit
         run: command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked

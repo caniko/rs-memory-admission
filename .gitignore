@@ -2,3 +2,4 @@ target/
 result
 docs/book/
 .pre-commit-config.yaml
+.claude/

@@ -27,20 +27,20 @@ jobs:
           path: ~/.cargo/bin
           key: cargo-bin-${{ runner.os }}-${{ hashFiles('.forgejo/workflows/ci.yaml', '.github/workflows/ci.yaml') }}
 
-      - name: Install nextest
-        run: command -v cargo-nextest >/dev/null 2>&1 || cargo install cargo-nextest --locked --version 0.9.100
-
       - name: Test all features
-        run: cargo nextest run --all-features
+        run: cargo test --all-features
 
       - name: Test no default features
-        run: cargo nextest run --no-default-features
+        run: cargo test --no-default-features
 
       - name: Install cargo-audit
         run: command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
 
       - name: Install cargo-deny
         run: command -v cargo-deny >/dev/null 2>&1 || cargo install cargo-deny --locked --version 0.18.3
+
+      - name: Check MSRV
+        run: cargo +1.85 check --all-targets
 
       - name: Audit dependencies
         run: cargo audit

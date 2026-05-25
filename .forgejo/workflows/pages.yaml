@@ -10,10 +10,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: atlas
-    container:
-      image: nixos/nix:latest
-      options: --entrypoint /root/.nix-profile/bin/tail
+    runs-on: atlas-nix-trusted
     env:
       NIX_CONFIG: |
         experimental-features = nix-command flakes
@@ -21,6 +18,9 @@ jobs:
         trusted-public-keys = canix:uqr0nD3I0mfj9BYfZgTZHMaDKfI2yCTtSA5JGTWKUeg= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Nix version
+        run: nix --version
 
       - name: Build site
         run: nix build .#site
