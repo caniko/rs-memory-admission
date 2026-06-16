@@ -16,12 +16,18 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    plinth = {
+      url = "git+https://codeberg.org/caniko/plinth.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs = {
     self,
     nixpkgs,
     rs-harbor,
+    plinth,
     flake-utils,
     rust-overlay,
     treefmt-nix,
@@ -69,7 +75,12 @@
         '';
       };
 
-      site = docs;
+      site = plinth.lib.${system}.mkProjectSite {
+        pname = "memory-admission-website";
+        domain = "memory-admission.tartanoglu.com";
+        configPath = ./website/plinth-project.toml;
+        docsPackage = docs;
+      };
 
       treefmtEval = treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix);
       pre-commit-check = git-hooks.lib.${system}.run {
@@ -83,7 +94,12 @@
     in {
       packages = {
         default = package;
+        website = site;
         inherit docs site;
+      };
+
+      apps.deploy-pages = plinth.lib.${system}.mkDeployPagesApp {
+        domain = "memory-admission.tartanoglu.com";
       };
 
       formatter = treefmtEval.config.build.wrapper;
