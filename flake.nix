@@ -41,6 +41,7 @@
       };
       lib = pkgs.lib;
       toolchain = rs-harbor.lib.mkToolchain {inherit pkgs;};
+      cross = rs-harbor.lib.mkCross {inherit pkgs system;};
       inherit (toolchain) craneLib;
 
       src = craneLib.cleanCargoSource ./.;
@@ -119,23 +120,42 @@
         };
       };
 
-      devShells.default = craneLib.devShell {
-        checks = self.checks.${system};
-        packages = with pkgs;
-          [
-            alejandra
-            cargo-nextest
+      devShells = {
+        default = craneLib.devShell {
+          checks = self.checks.${system};
+          packages = with pkgs;
+            [
+              alejandra
+              cargo-nextest
+              mdbook
+              pre-commit
+              prettier
+              rust-analyzer
+              taplo
+            ]
+            ++ pre-commit-check.enabledPackages;
+          shellHook = ''
+            ${pre-commit-check.shellHook}
+            echo "Documentation: cd docs && mdbook serve"
+          '';
+        };
+
+        docs = rs-harbor.lib.mkDocsShell {
+          inherit pkgs cross;
+          inherit (toolchain) craneLib;
+          checks = self.checks.${system};
+          packages = with pkgs; [
             mdbook
+            plinth.packages.${system}.plinth-project
             pre-commit
-            prettier
             rust-analyzer
-            taplo
-          ]
-          ++ pre-commit-check.enabledPackages;
-        shellHook = ''
-          ${pre-commit-check.shellHook}
-          echo "Documentation: cd docs && mdbook serve"
-        '';
+          ] ++ pre-commit-check.enabledPackages;
+          extraShellHook = ''
+            ${pre-commit-check.shellHook}
+            echo "Project site: plinth-project serve --config website/plinth-project.toml"
+            echo "Documentation: mdbook serve docs"
+          '';
+        };
       };
     });
 }

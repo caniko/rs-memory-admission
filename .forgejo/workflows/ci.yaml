@@ -4,6 +4,7 @@ name: CI
 on:
   push:
     branches: ["**"]
+    tags-ignore: ["**"]
   pull_request:
 
 concurrency:
@@ -25,7 +26,7 @@ jobs:
         uses: https://code.forgejo.org/actions/cache@v4
         with:
           path: ~/.cargo/bin
-          key: cargo-bin-${{ runner.os }}-${{ hashFiles('.forgejo/workflows/ci.yaml', '.github/workflows/ci.yaml') }}
+          key: cargo-bin-${{ runner.os }}-${{ hashFiles('.forgejo/workflows/*.yaml') }}
 
       - name: Test all features
         run: cargo test --all-features
@@ -42,8 +43,17 @@ jobs:
       - name: Check MSRV
         run: cargo +1.85 check --all-targets
 
+      - name: Fetch RustSec advisory database
+        run: |
+          db="${CARGO_HOME:-$HOME/.cargo}/advisory-db"
+          rm -rf "$db"
+          mkdir -p "$(dirname "$db")"
+          git -c http.lowSpeedLimit=1024 -c http.lowSpeedTime=30 clone --depth 1 https://github.com/RustSec/advisory-db.git "$db"
+
       - name: Audit dependencies
-        run: cargo audit
+        run: |
+          db="${CARGO_HOME:-$HOME/.cargo}/advisory-db"
+          cargo audit --db "$db" --no-fetch --stale
 
       - name: Deny dependency policy
         run: cargo deny check bans licenses sources

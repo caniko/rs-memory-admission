@@ -1,5 +1,9 @@
 # memory-admission
 
+<!-- simit:badges:start -->
+[![CI](https://img.shields.io/badge/CI-drift-2088ff)](.forgejo/workflows/ci.yaml) [![Nix](https://img.shields.io/badge/Nix-managed-5277c3)](flake.nix) [![docs](https://img.shields.io/badge/docs-enabled-6f42c1)](docs) [![crates.io](https://img.shields.io/badge/crates.io-ready-f46623)](https://crates.io/crates/memory-admission)
+<!-- simit:badges:end -->
+
 `memory-admission` is a Rust admission gate for parallel work that should slow
 down when the host or cgroup is under memory pressure. It exposes synchronous
 and Tokio-friendly gates, plus weighted gates for jobs that can estimate their
