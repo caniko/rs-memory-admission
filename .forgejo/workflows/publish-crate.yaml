@@ -21,19 +21,16 @@ jobs:
   publish:
     enable-openid-connect: true
     runs-on: atlas
-    container: rust:1.85-bookworm
+    env:
+      NIX_CONFIG: "experimental-features = nix-command flakes"
+      XDG_CACHE_HOME: "/tmp/.cache"
+      CARGO_HOME: "/tmp/.cargo"
     steps:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
 
-      - name: Install Rust components
-        run: rustup component add clippy rustfmt
-
-      - name: Cache cargo bin (tools)
-        uses: https://code.forgejo.org/actions/cache@v4
-        with:
-          path: ~/.cargo/bin
-          key: cargo-bin-${{ runner.os }}-${{ hashFiles('.forgejo/workflows/*.yaml') }}
+      - name: Add cargo bin to PATH
+        run: echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
 
       - name: Validate signed release tag
         run: |
@@ -50,7 +47,7 @@ jobs:
           fi
 
           # cargo pkgid scopes the version lookup to the crate this workflow publishes.
-          version="$(cargo pkgid -p memory-admission | awk -F'[#@]' '{print $NF}')"
+          version="$(nix develop -c cargo pkgid -p memory-admission | awk -F'[#@]' '{print $NF}')"
           if [ -z "$version" ]; then
             echo "Could not read package version from cargo pkgid" >&2
             exit 1
@@ -78,17 +75,17 @@ jobs:
           git fetch --force --tags origin "refs/tags/${tag}:refs/tags/${tag}"
           git verify-tag "$tag"
 
-      - name: Test all features
-        run: cargo test --all-features
+      - name: Check flake
+        run: nix flake check
 
-      - name: Test no default features
-        run: cargo test --no-default-features
+      - name: Test
+        run: nix develop -c cargo test
 
-      - name: Install cargo-audit
-        run: command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
+      - name: Check cargo-audit tool
+        run: nix develop -c command -v cargo-audit
 
-      - name: Install cargo-deny
-        run: command -v cargo-deny >/dev/null 2>&1 || cargo install cargo-deny --locked --version 0.18.3
+      - name: Check cargo-deny tool
+        run: nix develop -c command -v cargo-deny
 
       - name: Fetch RustSec advisory database
         run: |
@@ -100,22 +97,19 @@ jobs:
       - name: Audit dependencies
         run: |
           db="${CARGO_HOME:-$HOME/.cargo}/advisory-db"
-          cargo audit --db "$db" --no-fetch --stale
+          nix develop -c cargo audit --db "$db" --no-fetch --stale
 
       - name: Deny dependency policy
-        run: cargo deny check bans licenses sources
+        run: nix develop -c cargo deny check bans licenses sources
 
       - name: Build docs
-        run: cargo doc --no-deps --all-features
+        run: nix develop .#docs -c cargo doc --no-deps --all-features
 
-      - name: Clippy all features
-        run: cargo clippy --all-targets --all-features -- --deny warnings
-
-      - name: Clippy no default features
-        run: cargo clippy --all-targets --no-default-features -- --deny warnings
+      - name: Clippy
+        run: nix develop -c cargo clippy --all-targets -- --deny warnings
 
       - name: Dry-run publish
-        run: cargo publish --dry-run
+        run: nix develop -c cargo publish --dry-run
 
       - name: Publish
         env:
@@ -161,4 +155,4 @@ jobs:
             exit 1
           fi
           export CARGO_REGISTRY_TOKEN="${CARGO_REGISTRY_TOKEN:-$CRATES_IO_API_TOKEN}"
-          cargo publish
+          nix develop -c cargo publish

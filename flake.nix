@@ -2,7 +2,7 @@
   description = "Memory-aware admission gate for Rust work pipelines";
 
   inputs = {
-    rs-harbor.url = "git+https://codeberg.org/caniko/rs-harbor.git";
+    rs-harbor.url = "git+https://codeberg.org/caniko/rs-harbor.git?ref=trunk";
 
     nixpkgs.follows = "rs-harbor/nixpkgs";
     rust-overlay.follows = "rs-harbor/rust-overlay";
