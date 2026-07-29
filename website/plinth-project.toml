@@ -1,6 +1,6 @@
 [site]
 title = "memory-admission"
-description = "<!-- simit:badges:start -->"
+description = "Rust admission gate for parallel work that slows down under host or cgroup memory pressure, with synchronous, Tokio-friendly, and weighted gates."
 base_url = "/"
 footer_note = "Generated from repository metadata by the plinth-project FOSS sweep."
 
@@ -19,13 +19,13 @@ href = "ssh://git@codeberg.org/caniko/rs-memory-admission.git"
 [[pages]]
 slug = "index"
 title = "memory-admission"
-description = "<!-- simit:badges:start -->"
+description = "Rust admission gate for parallel work that slows down under host or cgroup memory pressure, with synchronous, Tokio-friendly, and weighted gates."
 
 [[pages.sections]]
 type = "hero"
 title = "memory-admission"
-tagline = "<!-- simit:badges:start -->"
-subtitle = "<!-- simit:badges:start -->"
+tagline = "Memory-aware admission for parallel work"
+subtitle = "Synchronous, Tokio-friendly, and weighted gates for memory-sensitive workloads."
 
 [[pages.sections.ctas]]
 label = "View source"
@@ -43,4 +43,3 @@ description = "Project technology detected from repository manifests."
 [[pages.sections.features]]
 title = "Nix"
 description = "Project technology detected from repository manifests."
-
