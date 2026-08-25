@@ -1,6 +1,6 @@
 # Nix
 
-The flake builds the crate with crane through `git+https://codeberg.org/caniko/rs-harbor.git`.
+The flake builds the crate with crane through `git+https://github.com/caniko/harbor-rs.git`.
 
 ```sh
 nix build

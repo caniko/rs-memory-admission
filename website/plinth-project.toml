@@ -10,11 +10,11 @@ href = "#overview"
 
 [[nav]]
 label = "Source"
-href = "ssh://git@codeberg.org/caniko/rs-memory-admission.git"
+href = "ssh://git@github.com/caniko/rs-memory-admission.git"
 
 [[footer_links]]
 label = "Source"
-href = "ssh://git@codeberg.org/caniko/rs-memory-admission.git"
+href = "ssh://git@github.com/caniko/rs-memory-admission.git"
 
 [[pages]]
 slug = "index"
@@ -29,7 +29,7 @@ subtitle = "<!-- simit:badges:start -->"
 
 [[pages.sections.ctas]]
 label = "View source"
-href = "ssh://git@codeberg.org/caniko/rs-memory-admission.git"
+href = "ssh://git@github.com/caniko/rs-memory-admission.git"
 primary = true
 
 [[pages.sections]]
