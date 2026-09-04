@@ -99,7 +99,7 @@ run alone so they do not deadlock the system.
 ## Nix
 
 The flake builds the crate with crane through
-`git+https://codeberg.org/caniko/rs-harbor.git`.
+`git+https://github.com/caniko/harbor-rs.git`.
 
 ```sh
 nix build
