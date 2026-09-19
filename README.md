@@ -93,7 +93,7 @@ run alone so they do not deadlock the system.
 ## Links
 
 - API docs: <https://docs.rs/memory-admission>
-- Source: <https://codeberg.org/caniko/rs-memory-admission>
+- Source: <https://github.com/caniko/rs-memory-admission>
 - Project docs: <https://caniko.codeberg.page/rs-memory-admission/>
 
 ## Nix
