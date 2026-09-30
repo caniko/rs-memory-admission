@@ -39,7 +39,10 @@
         overlays = [(import rust-overlay)];
       };
       lib = pkgs.lib;
-      toolchain = harbor-rs.lib.mkToolchain {inherit pkgs; toolchainProfile = "nightly";};
+      toolchain = harbor-rs.lib.mkToolchain {
+        inherit pkgs;
+        toolchainProfile = "nightly";
+      };
       cross = harbor-rs.lib.mkCross {inherit pkgs system;};
       inherit (toolchain) craneLib;
 
@@ -120,11 +123,10 @@
         # Fail if flake inputs ever point at the retired Codeberg/Codefloe
         # mirrors again (fleet migrated to github.com/caniko/*).
         # sourceUrl package metadata is excluded: informational only, not fetched.
-        host-pinning =
-          let
-            # Split across literals so this file never matches its own pattern.
-            staleHosts = "cod" + "eberg|cod" + "efloe";
-          in
+        host-pinning = let
+          # Split across literals so this file never matches its own pattern.
+          staleHosts = "cod" + "eberg|cod" + "efloe";
+        in
           pkgs.runCommand "rs-memory-admission-host-pinning" {} ''
             if ${pkgs.lib.getExe pkgs.ripgrep} -v "sourceUrl" ${./flake.nix} ${./flake.lock} \
               | ${pkgs.lib.getExe pkgs.ripgrep} -q "${staleHosts}"; then
@@ -138,6 +140,13 @@
       };
 
       devShells = {
+        msrv = pkgs.mkShell {
+          inputsFrom = [(self.devShells.${system}.default.overrideAttrs (_: {shellHook = "";}))];
+          packages = [pkgs.rust-bin.stable."1.85.0".minimal];
+          RUSTFLAGS = "";
+          CARGO_ENCODED_RUSTFLAGS = "";
+          RUSTC_WRAPPER = "";
+        };
         default = craneLib.devShell {
           checks = self.checks.${system};
           packages = with pkgs;
@@ -161,12 +170,14 @@
           inherit pkgs cross;
           inherit (toolchain) craneLib;
           checks = self.checks.${system};
-          packages = with pkgs; [
-            mdbook
-            plinth.packages.${system}.plinth-project
-            pre-commit
-            rust-analyzer
-          ] ++ pre-commit-check.enabledPackages;
+          packages = with pkgs;
+            [
+              mdbook
+              plinth.packages.${system}.plinth-project
+              pre-commit
+              rust-analyzer
+            ]
+            ++ pre-commit-check.enabledPackages;
           extraShellHook = ''
             ${pre-commit-check.shellHook}
             echo "Project site: plinth-project serve --config website/plinth-project.toml"
