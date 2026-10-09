@@ -2,7 +2,7 @@
 
 <!-- simit:badges:start -->
 
-[![CI](https://img.shields.io/badge/CI-drift-2088ff)](.forgejo/workflows/ci.yaml) [![Nix](https://img.shields.io/badge/Nix-managed-5277c3)](flake.nix) [![docs](https://img.shields.io/badge/docs-enabled-6f42c1)](docs) [![crates.io](https://img.shields.io/badge/crates.io-ready-f46623)](https://crates.io/crates/memory-admission)
+[![CI](https://img.shields.io/badge/CI-managed-2088ff)](.github/workflows/ci.yaml) [![Nix](https://img.shields.io/badge/Nix-drift-5277c3)](flake.nix) [![docs](https://img.shields.io/badge/docs-enabled-6f42c1)](docs) [![crates.io](https://img.shields.io/badge/crates.io-ready-f46623)](https://crates.io/crates/memory-admission)
 
 <!-- simit:badges:end -->
 
@@ -94,7 +94,7 @@ run alone so they do not deadlock the system.
 
 - API docs: <https://docs.rs/memory-admission>
 - Source: <https://github.com/caniko/rs-memory-admission>
-- Project docs: <https://caniko.codeberg.page/rs-memory-admission/>
+- Project docs: <https://memory-admission.tartanoglu.com/docs/>
 
 ## Nix
 
