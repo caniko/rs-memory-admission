@@ -2,11 +2,11 @@
   description = "Memory-aware admission gate for Rust work pipelines";
 
   inputs = {
-    harbor-rs.url = "git+https://github.com/caniko/harbor-rs.git?ref=trunk&rev=fac8049316846e0ef1c1e6acd92aed7a337b333a";
+    harbor.url = "git+https://github.com/caniko/harbor.git?ref=feat/harbor-monorepo-components&rev=e8b1996580e4ecd51dd402edf4a16d9df88e3a1b";
 
-    nixpkgs.follows = "harbor-rs/nixpkgs";
-    rust-overlay.follows = "harbor-rs/rust-overlay";
-    crane.follows = "harbor-rs/crane";
+    nixpkgs.follows = "harbor/nixpkgs";
+    rust-overlay.follows = "harbor/rust-overlay";
+    crane.follows = "harbor/crane";
     flake-utils.url = "github:numtide/flake-utils";
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -14,10 +14,10 @@
     };
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "harbor/nixpkgs-darwin";
     };
     plinth = {
-      url = "git+https://github.com/caniko/plinth.git";
+      url = "git+https://github.com/caniko/plinth.git?ref=migrate/harbor-combined-20261012-features&rev=534dfa6dd6217db97b7ccd313501120a3c34d912";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -25,7 +25,7 @@
   outputs = {
     self,
     nixpkgs,
-    harbor-rs,
+    harbor,
     plinth,
     flake-utils,
     rust-overlay,
@@ -34,13 +34,21 @@
     ...
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [(import rust-overlay)];
-      };
+      pkgs =
+        import (
+          if system == "x86_64-darwin"
+          then harbor.inputs.nixpkgs-darwin
+          else nixpkgs
+        ) {
+          inherit system;
+          overlays = [(import rust-overlay)];
+        };
       lib = pkgs.lib;
-      toolchain = harbor-rs.lib.mkToolchain {inherit pkgs; toolchainProfile = "nightly";};
-      cross = harbor-rs.lib.mkCross {inherit pkgs system;};
+      toolchain = harbor.lib.rust.mkToolchain {
+        inherit pkgs;
+        toolchainProfile = "nightly";
+      };
+      cross = harbor.lib.rust.mkCross {inherit pkgs system;};
       inherit (toolchain) craneLib;
 
       src = craneLib.cleanCargoSource ./.;
@@ -120,11 +128,10 @@
         # Fail if flake inputs ever point at the retired Codeberg/Codefloe
         # mirrors again (fleet migrated to github.com/caniko/*).
         # sourceUrl package metadata is excluded: informational only, not fetched.
-        host-pinning =
-          let
-            # Split across literals so this file never matches its own pattern.
-            staleHosts = "cod" + "eberg|cod" + "efloe";
-          in
+        host-pinning = let
+          # Split across literals so this file never matches its own pattern.
+          staleHosts = "cod" + "eberg|cod" + "efloe";
+        in
           pkgs.runCommand "rs-memory-admission-host-pinning" {} ''
             if ${pkgs.lib.getExe pkgs.ripgrep} -v "sourceUrl" ${./flake.nix} ${./flake.lock} \
               | ${pkgs.lib.getExe pkgs.ripgrep} -q "${staleHosts}"; then
@@ -157,16 +164,18 @@
           '';
         };
 
-        docs = harbor-rs.lib.mkDocsShell {
+        docs = harbor.lib.rust.mkDocsShell {
           inherit pkgs cross;
           inherit (toolchain) craneLib;
           checks = self.checks.${system};
-          packages = with pkgs; [
-            mdbook
-            plinth.packages.${system}.plinth-project
-            pre-commit
-            rust-analyzer
-          ] ++ pre-commit-check.enabledPackages;
+          packages = with pkgs;
+            [
+              mdbook
+              plinth.packages.${system}.plinth-project
+              pre-commit
+              rust-analyzer
+            ]
+            ++ pre-commit-check.enabledPackages;
           extraShellHook = ''
             ${pre-commit-check.shellHook}
             echo "Project site: plinth-project serve --config website/plinth-project.toml"
