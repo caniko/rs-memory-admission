@@ -50,6 +50,7 @@
       };
       cross = harbor.lib.rust.mkCross {inherit pkgs system;};
       inherit (toolchain) craneLib;
+      msrvToolchain = pkgs.rust-bin.stable."1.85.0".default;
 
       src = craneLib.cleanCargoSource ./.;
 
@@ -145,6 +146,11 @@
       };
 
       devShells = {
+        msrv = (craneLib.overrideToolchain msrvToolchain).devShell {
+          RUSTFLAGS = "";
+          CARGO_ENCODED_RUSTFLAGS = "";
+        };
+
         default = craneLib.devShell {
           checks = self.checks.${system};
           packages = with pkgs;
