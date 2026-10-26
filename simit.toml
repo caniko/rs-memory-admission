@@ -1,4 +1,5 @@
 [ci]
+push_branches = ["trunk", "simit/update/**"]
 runner = "ubuntu-24.04"
 with_msrv = true
 with_audit = true
