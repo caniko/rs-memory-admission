@@ -25,7 +25,7 @@ jobs:
       CARGO_HOME: "/tmp/.cargo"
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -86,6 +86,8 @@ jobs:
 
           git_fetch --force --tags origin "refs/tags/${tag}:refs/tags/${tag}"
           git verify-tag "$tag"
+          signed_tag_name="$(git cat-file tag "refs/tags/$tag" | sed -n '1,/^$/s/^tag //p')"
+          test "$signed_tag_name" = "$tag" || { echo 'Signed tag object name differs from the release label' >&2; exit 1; }
           validated_sha="$(git rev-parse --verify "refs/tags/${tag}^{commit}")"
           checkout_sha="$(git rev-parse --verify HEAD)"
           if [ "$validated_sha" != "$checkout_sha" ]; then
@@ -161,7 +163,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/simit-crates/memory-admission"
           cp "$RUNNER_TEMP/simit-package-target/package/memory-admission-$version.crate" "$RUNNER_TEMP/simit-crates/memory-admission/"
       - name: Retain original-run archive memory-admission
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: simit-crate-memory-admission-${{ github.run_attempt }}
           path: ${{ runner.temp }}/simit-crates/memory-admission/*.crate

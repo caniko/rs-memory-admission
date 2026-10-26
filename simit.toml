@@ -10,6 +10,7 @@ provider = "actions"
 platform = "github"
 publish_crates = true
 all_features = false
+publish_strategy = "members"
 
 [ci.pages]
 repo = "caniko/rs-memory-admission"
