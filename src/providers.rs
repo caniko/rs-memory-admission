@@ -93,7 +93,13 @@ impl MemoryProvider for ProcMeminfoProvider {
 ///
 /// - `total_bytes` — the cgroup's `memory.high` (or `memory.max` if `high`
 ///   is not set), falling back to host total when neither is configured.
-/// - `available_bytes` — `total_bytes - memory.current`, clamped to zero.
+/// - `available_bytes` — `total_bytes` minus the working set, clamped to
+///   zero. The working set is `memory.current` minus the clean part of
+///   `inactive_file` (inactive file pages less `file_dirty` and
+///   `file_writeback`, which cannot be reclaimed until I/O completes).
+///   `memory.current` includes page cache, so after a large build in the
+///   same cgroup it overstates real pressure. If `memory.stat` is
+///   unreadable the provider falls back to plain `memory.current`.
 /// - `page_cache_bytes` — `memory.stat`'s `file` accounting.
 ///
 /// Linux-only. Use [`ProcMeminfoProvider`] or [`SysinfoProvider`] when the
@@ -150,11 +156,16 @@ impl CgroupV2Provider {
             .and_then(|s| s.trim().parse().ok())
     }
 
-    fn read_file_cache(&self) -> u64 {
-        let Ok(stat) = std::fs::read_to_string(self.base_dir.join("memory.stat")) else {
-            return 0;
-        };
-        parse_cgroup_file_cache_bytes(&stat)
+    fn read_stat(&self) -> Option<String> {
+        std::fs::read_to_string(self.base_dir.join("memory.stat")).ok()
+    }
+
+    #[cfg(test)]
+    fn with_base_dir(base_dir: std::path::PathBuf, fallback_total: u64) -> Self {
+        Self {
+            base_dir,
+            fallback_total,
+        }
     }
 }
 
@@ -181,11 +192,24 @@ impl MemoryProvider for CgroupV2Provider {
                 "no usable cgroup memory limit and no host fallback total",
             ));
         }
-        let available = total.saturating_sub(current);
+        let stat = self.read_stat();
+        let field = |key| {
+            stat.as_deref()
+                .and_then(|s| parse_cgroup_stat_field(s, key))
+        };
+        // inactive_file can hold dirty/writeback pages that are not
+        // reclaimable until I/O completes; credit only the clean remainder.
+        let pending_io = field("file_dirty")
+            .unwrap_or(0)
+            .saturating_add(field("file_writeback").unwrap_or(0));
+        let reclaimable = field("inactive_file")
+            .unwrap_or(0)
+            .saturating_sub(pending_io);
+        let used = current.saturating_sub(reclaimable);
         Ok(MemoryStats {
             total_bytes: total,
-            available_bytes: available,
-            page_cache_bytes: self.read_file_cache(),
+            available_bytes: total.saturating_sub(used),
+            page_cache_bytes: field("file").unwrap_or(0),
         })
     }
 }
@@ -345,19 +369,81 @@ fn parse_memtotal_kib(contents: &str) -> Option<u64> {
 }
 
 #[cfg(target_os = "linux")]
-fn parse_cgroup_file_cache_bytes(contents: &str) -> u64 {
-    contents
-        .lines()
-        .find_map(|line| {
-            let rest = line.strip_prefix("file ")?;
-            rest.trim().parse::<u64>().ok()
-        })
-        .unwrap_or(0)
+fn parse_cgroup_stat_field(contents: &str, key: &str) -> Option<u64> {
+    contents.lines().find_map(|line| {
+        let (k, v) = line.split_once(' ')?;
+        (k == key).then(|| v.trim().parse().ok())?
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    fn fake_cgroup(name: &str, current: u64, stat: Option<&str>) -> CgroupV2Provider {
+        let dir = std::env::temp_dir().join(format!("memadm-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("memory.current"), current.to_string()).unwrap();
+        std::fs::write(dir.join("memory.max"), "max").unwrap();
+        std::fs::write(dir.join("memory.high"), "1000").unwrap();
+        if let Some(stat) = stat {
+            std::fs::write(dir.join("memory.stat"), stat).unwrap();
+        }
+        CgroupV2Provider::with_base_dir(dir, 0)
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_inactive_file_counts_as_available() {
+        let p = fake_cgroup(
+            "inactive",
+            900,
+            Some("file 800\ninactive_file 700\nactive_file 100\n"),
+        );
+        let s = p.stats().unwrap();
+        assert_eq!(s.available_bytes, 800);
+        assert_eq!(s.page_cache_bytes, 800);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_active_file_is_not_available() {
+        let p = fake_cgroup(
+            "active",
+            900,
+            Some("file 800\ninactive_file 0\nactive_file 800\n"),
+        );
+        assert_eq!(p.stats().unwrap().available_bytes, 100);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_missing_stat_falls_back_to_current() {
+        let p = fake_cgroup("nostat", 900, None);
+        let s = p.stats().unwrap();
+        assert_eq!(s.available_bytes, 100);
+        assert_eq!(s.page_cache_bytes, 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_inactive_file_above_current_saturates() {
+        let p = fake_cgroup("over", 100, Some("file 500\ninactive_file 500\n"));
+        assert_eq!(p.stats().unwrap().available_bytes, 1000);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_dirty_and_writeback_pages_stay_used() {
+        let p = fake_cgroup(
+            "dirty",
+            900,
+            Some("file 800\ninactive_file 700\nfile_dirty 200\nfile_writeback 100\n"),
+        );
+        assert_eq!(p.stats().unwrap().available_bytes, 500);
+    }
 
     #[test]
     fn parses_typical_proc_meminfo() {
@@ -393,7 +479,7 @@ mod tests {
     #[test]
     fn parses_cgroup_file_cache() {
         let contents = "anon 1024\nfile 4096\nkernel 512\n";
-        assert_eq!(parse_cgroup_file_cache_bytes(contents), 4096);
+        assert_eq!(parse_cgroup_stat_field(contents, "file"), Some(4096));
     }
 
     #[cfg(target_os = "linux")]
