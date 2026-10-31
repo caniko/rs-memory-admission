@@ -8,4 +8,6 @@ The default provider selection is:
 2. Linux `/proc/meminfo`.
 3. `sysinfo` on non-Linux targets when the `sysinfo` feature is enabled.
 
+The cgroup-v2 provider reports availability as the limit (`memory.high`, else `memory.max`) minus the working set, `memory.current - inactive_file` (the kubelet/cAdvisor definition). `memory.current` includes page cache, so subtracting only inactive file pages keeps availability from collapsing after a large build while still counting active, dirty, and writeback pages as in use. If `memory.stat` is unreadable it falls back to `memory.current`.
+
 Custom providers can implement `MemoryProvider` for other memory sources such as NUMA-specific accounting, container runtimes, or test fixtures.
