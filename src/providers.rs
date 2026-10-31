@@ -94,12 +94,12 @@ impl MemoryProvider for ProcMeminfoProvider {
 /// - `total_bytes` — the cgroup's `memory.high` (or `memory.max` if `high`
 ///   is not set), falling back to host total when neither is configured.
 /// - `available_bytes` — `total_bytes` minus the working set, clamped to
-///   zero. The working set is `memory.current - inactive_file` (the
-///   kubelet/cAdvisor definition): `memory.current` includes page cache, so
-///   after a large build in the same cgroup it overstates real pressure.
-///   Inactive file pages are cheaply reclaimable; active file, dirty, and
-///   writeback pages are not subtracted. If `memory.stat` is unreadable the
-///   provider falls back to plain `memory.current`.
+///   zero. The working set is `memory.current` minus the clean part of
+///   `inactive_file` (inactive file pages less `file_dirty` and
+///   `file_writeback`, which cannot be reclaimed until I/O completes).
+///   `memory.current` includes page cache, so after a large build in the
+///   same cgroup it overstates real pressure. If `memory.stat` is
+///   unreadable the provider falls back to plain `memory.current`.
 /// - `page_cache_bytes` — `memory.stat`'s `file` accounting.
 ///
 /// Linux-only. Use [`ProcMeminfoProvider`] or [`SysinfoProvider`] when the
@@ -197,7 +197,15 @@ impl MemoryProvider for CgroupV2Provider {
             stat.as_deref()
                 .and_then(|s| parse_cgroup_stat_field(s, key))
         };
-        let used = current.saturating_sub(field("inactive_file").unwrap_or(0));
+        // inactive_file can hold dirty/writeback pages that are not
+        // reclaimable until I/O completes; credit only the clean remainder.
+        let pending_io = field("file_dirty")
+            .unwrap_or(0)
+            .saturating_add(field("file_writeback").unwrap_or(0));
+        let reclaimable = field("inactive_file")
+            .unwrap_or(0)
+            .saturating_sub(pending_io);
+        let used = current.saturating_sub(reclaimable);
         Ok(MemoryStats {
             total_bytes: total,
             available_bytes: total.saturating_sub(used),
@@ -424,6 +432,17 @@ mod tests {
     fn cgroup_inactive_file_above_current_saturates() {
         let p = fake_cgroup("over", 100, Some("file 500\ninactive_file 500\n"));
         assert_eq!(p.stats().unwrap().available_bytes, 1000);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn cgroup_dirty_and_writeback_pages_stay_used() {
+        let p = fake_cgroup(
+            "dirty",
+            900,
+            Some("file 800\ninactive_file 700\nfile_dirty 200\nfile_writeback 100\n"),
+        );
+        assert_eq!(p.stats().unwrap().available_bytes, 500);
     }
 
     #[test]
