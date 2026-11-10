@@ -28,8 +28,8 @@ while the pipeline runs.
 - Weighted gates reserve the caller's declared byte weight. A job larger than
   the gate waits until the gate is otherwise empty and then runs alone, so
   oversized work cannot deadlock the system.
-- Gate style is a feature choice (`async`, `sysinfo`, weighted surface) so a
-  consumer that needs one gate does not pull the other provider stack.
+- Gate style is a feature choice (`sync`, `async`, `sysinfo`) so a consumer that
+  needs one gate does not pull the other provider stack.
 
 ## Scope
 
@@ -54,5 +54,6 @@ since then is build and CI maintenance. No roadmap is checked in.
 
 ## Place in the fleet
 
-No canix runtime consumer was found. Canix records the project only in the atlas
-`simit-updater` registry.
+No canix runtime consumer was found. Canix records the project in the atlas
+`simit-updater` registry and a Pages-site domain entry, neither of which
+imports it.
