@@ -1,45 +1,92 @@
 [site]
 title = "memory-admission"
-description = "Rust admission gate for parallel work that slows down under host or cgroup memory pressure, with synchronous, Tokio-friendly, and weighted gates."
+description = "A Rust crate whose permits hold back sync, Tokio and byte-weighted jobs while cgroup-v2 or /proc/meminfo pressure stays high."
 base_url = "/"
-footer_note = "Generated from repository metadata by the plinth-project FOSS sweep."
 
 [[nav]]
 label = "Overview"
 href = "#overview"
 
 [[nav]]
+label = "Install"
+href = "#install"
+
+[[nav]]
+label = "Documentation"
+href = "/docs/"
+
+[[nav]]
 label = "Source"
-href = "ssh://git@github.com/caniko/rs-memory-admission.git"
+href = "https://github.com/caniko/rs-memory-admission"
+
+[[footer_links]]
+label = "Documentation"
+href = "/docs/"
+
+[[footer_links]]
+label = "API docs"
+href = "https://docs.rs/memory-admission"
 
 [[footer_links]]
 label = "Source"
-href = "ssh://git@github.com/caniko/rs-memory-admission.git"
+href = "https://github.com/caniko/rs-memory-admission"
 
 [[pages]]
 slug = "index"
 title = "memory-admission"
-description = "Rust admission gate for parallel work that slows down under host or cgroup memory pressure, with synchronous, Tokio-friendly, and weighted gates."
+description = "A Rust crate whose permits hold back sync, Tokio and byte-weighted jobs while cgroup-v2 or /proc/meminfo pressure stays high."
 
 [[pages.sections]]
 type = "hero"
-title = "memory-admission"
-tagline = "Memory-aware admission for parallel work"
-subtitle = "Synchronous, Tokio-friendly, and weighted gates for memory-sensitive workloads."
+title = "Admission control for memory, not worker counts"
+tagline = "Slow parallel work before the kernel kills it."
+subtitle = "A Rust crate whose permits hold back sync, Tokio and byte-weighted jobs while cgroup-v2 or /proc/meminfo pressure stays high."
 
 [[pages.sections.ctas]]
 label = "View source"
-href = "ssh://git@github.com/caniko/rs-memory-admission.git"
+href = "https://github.com/caniko/rs-memory-admission"
 primary = true
+
+[[pages.sections.ctas]]
+label = "Documentation"
+href = "/docs/"
 
 [[pages.sections]]
 type = "feature_grid"
 id = "overview"
 
 [[pages.sections.features]]
-title = "Rust"
-description = "Project technology detected from repository manifests."
+title = "Sync and async permits"
+description = "The synchronous gate blocks and the Tokio gate awaits until memory allows one more job. Dropping the permit hands that slot straight back, so no separate release call is needed."
 
 [[pages.sections.features]]
-title = "Nix"
-description = "Project technology detected from repository manifests."
+title = "Byte-weighted reservations"
+description = "Weighted gates reserve the memory a job declares in bytes, so a pipeline mixing cheap work with archive extraction or media processing is bounded by memory instead of by worker slots. A job larger than the gate waits until nothing else runs, then goes alone."
+
+[[pages.sections.features]]
+title = "Three providers, one fallback"
+description = "The default provider reads cgroup-v2 accounting first, then /proc/meminfo, then sysinfo on non-Linux hosts. If a provider fails at startup or at acquisition, gates log once and fall back to thread-cap-only admission rather than failing your work."
+
+[[pages.sections.features]]
+title = "Hysteresis instead of flapping"
+description = "Admission pauses above the configured RAM fraction and resumes only a hysteresis band below it, so one finished task cannot push memory straight back over the limit and start a release-and-admit cycle."
+
+[[pages.sections]]
+type = "install"
+id = "install"
+heading = "Install"
+intro = "Add the crate to a Rust project. The default features bring the sync gate, the async gate and the sysinfo provider; keeping one gate style and dropping sysinfo are Cargo feature changes."
+guide_href = "/docs/getting-started/installation.html"
+
+[[pages.sections.primary_routes]]
+label = "Cargo"
+audience = "Rust 1.85 and newer, default features"
+href = "/docs/getting-started/installation.html#installation"
+command = "cargo add memory-admission"
+recommended = true
+
+[[pages.sections.secondary_routes]]
+label = "Async gate only"
+audience = "Cargo.toml, smaller dependency set"
+href = "/docs/getting-started/installation.html#installation"
+command = 'memory-admission = { version = "0.1.7", default-features = false, features = ["async"] }'
